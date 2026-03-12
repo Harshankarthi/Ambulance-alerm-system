@@ -1,0 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smart Ambulance Emergency System Design System */
+
+@layer base {
+  :root {
+    /* Light background theme */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 210 40% 96%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Emergency Red as primary */
+    --primary: 0 84% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 0 0% 10%;
+
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 85%;
+    --input: 214 32% 91%;
+    --ring: 0 84% 50%;
+
+    --radius: 0.75rem;
+
+    /* Emergency status colors */
+    --signal-red: 0 84% 50%;
+    --signal-green: 142 76% 45%;
+    --signal-amber: 38 92% 50%;
+    --status-active: 142 76% 45%;
+    --status-stopped: 0 84% 50%;
+    --status-warning: 38 92% 50%;
+
+    /* Gradients */
+    --gradient-emergency: linear-gradient(135deg, hsl(0 84% 50%), hsl(0 84% 35%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 45%), hsl(142 76% 35%));
+    --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 40%));
+    --gradient-dark: linear-gradient(180deg, hsl(210 40% 98%), hsl(210 40% 94%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 97%));
+
+    /* Shadows */
+    --shadow-glow-red: 0 0 30px hsl(0 84% 50% / 0.4);
+    --shadow-glow-green: 0 0 30px hsl(142 76% 45% / 0.4);
+    --shadow-glow-amber: 0 0 30px hsl(38 92% 50% / 0.4);
+    --shadow-card: 0 10px 40px -10px hsl(222 47% 11% / 0.1);
+
+    --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 0 84% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 85%;
+    --sidebar-ring: 0 84% 50%;
+  }
+
+  .dark {
+    /* Dark theme variant */
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 0 84% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 84% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 20%;
+    --input: 217 33% 17%;
+    --ring: 0 84% 50%;
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 0 84% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 20%;
+    --sidebar-ring: 0 84% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Orbitron', sans-serif;
+  }
+}
+
+@layer components {
+  .display-text {
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .emergency-glow {
+    box-shadow: var(--shadow-glow-red);
+  }
+
+  .success-glow {
+    box-shadow: var(--shadow-glow-green);
+  }
+
+  .warning-glow {
+    box-shadow: var(--shadow-glow-amber);
+  }
+
+  .glass-card {
+    background: var(--gradient-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-card);
+  }
+
+  .signal-light {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid hsl(var(--border));
+    transition: all 0.3s ease;
+  }
+
+  .signal-light.red {
+    background: hsl(var(--signal-red));
+    box-shadow: 0 0 20px hsl(var(--signal-red) / 0.8);
+  }
+
+  .signal-light.green {
+    background: hsl(var(--signal-green));
+    box-shadow: 0 0 20px hsl(var(--signal-green) / 0.8);
+  }
+
+  .signal-light.amber {
+    background: hsl(var(--signal-amber));
+    box-shadow: 0 0 20px hsl(var(--signal-amber) / 0.6);
+  }
+
+  @keyframes pulse-emergency {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 20px hsl(var(--signal-red) / 0.8);
+    }
+    50% {
+      opacity: 0.7;
+      box-shadow: 0 0 40px hsl(var(--signal-red) / 1);
+    }
+  }
+
+  @keyframes pulse-success {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 10px hsl(var(--signal-green) / 0.5);
+    }
+    50% {
+      opacity: 0.9;
+      box-shadow: 0 0 25px hsl(var(--signal-green) / 0.8);
+    }
+  }
+
+  .pulse-emergency {
+    animation: pulse-emergency 1s ease-in-out infinite;
+  }
+
+  .pulse-success {
+    animation: pulse-success 2s ease-in-out infinite;
+  }
+}
+
+/* Leaflet map overrides */
+.leaflet-container {
+  background: hsl(0 0% 100%) !important;
+  font-family: 'Inter', sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+  background: hsl(0 0% 100%) !important;
+  color: hsl(222 47% 11%) !important;
+  border: 1px solid hsl(214 32% 85%) !important;
+  border-radius: 0.75rem !important;
+}
+
+.leaflet-popup-tip {
+  background: hsl(0 0% 100%) !important;
+}
+
+.leaflet-control-zoom a {
+  background: hsl(0 0% 100%) !important;
+  color: hsl(222 47% 11%) !important;
+  border-color: hsl(214 32% 85%) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: hsl(210 40% 96%) !important;
+}

@@ -1,0 +1,6 @@
+fastapi==0.109.2
+uvicorn==0.27.1
+supabase==2.3.7
+pydantic==2.6.1
+python-dotenv==1.0.1
+cors-headers==0.1.0

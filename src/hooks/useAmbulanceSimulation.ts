@@ -394,7 +394,13 @@ export function useAmbulanceSimulation(audioCallbacks?: AudioCallbacks, notifica
           // Broadcast to other tabs (like Police Interface)
           const channel = new BroadcastChannel('smart_ambulance_channel');
           channel.postMessage({ type: 'AMBULANCE_POSITION_UPDATE', payload: nextAmbulance });
-          channel.close();
+          
+          // Force push the latest signal state down the channel for remote maps
+          setSignals((currentSignals) => {
+             channel.postMessage({ type: 'SIGNALS_UPDATE', payload: currentSignals });
+             channel.close();
+             return currentSignals;
+          });
 
           return nextAmbulance;
         });

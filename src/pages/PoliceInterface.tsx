@@ -65,6 +65,10 @@ const PoliceInterface = () => {
                     }));
                 }
 
+                if (event.data.type === 'SIGNALS_UPDATE') {
+                    setSignals(event.data.payload);
+                }
+
                 if (event.data.type === 'AMBULANCE_REQUESTED') {
                     toast.warning("🚨 EMERGENCY ALERT", {
                         description: "Citizen has requested emergency services. Please monitor the route and adjust traffic signals accordingly.",

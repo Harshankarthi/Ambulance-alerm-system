@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
+import AdminDashboard from "./pages/AdminDashboard";
 import UserInterface from "./pages/UserInterface";
 import PoliceInterface from "./pages/PoliceInterface";
 import NotFound from "./pages/NotFound";
@@ -19,7 +21,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Login />} />
+            <Route path="/portal" element={<Index />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/user" element={<UserInterface />} />
             <Route path="/police" element={<PoliceInterface />} />
             <Route path="*" element={<NotFound />} />

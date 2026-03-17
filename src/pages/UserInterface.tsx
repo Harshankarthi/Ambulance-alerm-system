@@ -147,10 +147,10 @@ const UserInterface = () => {
                 </button>
                 <button
                     onClick={sendManualNotification}
-                    className="flex items-center text-sm font-bold bg-amber-500 hover:bg-amber-600 active:scale-95 text-black px-4 py-1.5 rounded-full transition-all shadow-lg shadow-amber-500/20"
+                    className="flex items-center text-sm font-bold bg-destructive hover:bg-red-600 active:scale-95 text-white px-4 py-1.5 rounded-full transition-all shadow-lg shadow-red-500/20"
                 >
                     <BellRing className="w-4 h-4 mr-2" />
-                    Alert Police Control
+                    EMERGENCY ALARM
                 </button>
             </div>
 

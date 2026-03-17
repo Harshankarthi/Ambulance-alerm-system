@@ -8,9 +8,11 @@ import { INDIA_REGIONS } from '@/data/india-regions';
 import { TrafficSignal, AmbulanceState, RoutePoint } from '@/types/ambulance';
 import { ArrowLeft } from 'lucide-react';
 import { generateSignals, generatePoliceStations, PoliceStation } from '@/hooks/useAmbulanceSimulation';
+import { useAudioAlerts } from '@/hooks/useAudioAlerts';
 
 const PoliceInterface = () => {
     const navigate = useNavigate();
+    const { playWarningAlert } = useAudioAlerts();
     const defaultRoute = INDIA_REGIONS[0].districts[0].routePoints || [];
     const [activeRoute, setActiveRoute] = useState<RoutePoint[]>(defaultRoute);
 
@@ -75,8 +77,10 @@ const PoliceInterface = () => {
                         duration: 8000,
                     });
                 } else if (event.data.type === 'MANUAL_NOTIFICATION') {
-                    toast.error("📢 PRIORITY MESSAGE", {
-                        description: "Citizen sent a manual priority notification to the control room!",
+                    // Start loud warning beep
+                    playWarningAlert();
+                    toast.error("🚨 INCOMING ALARM EMERGENCY", {
+                        description: "A citizen has explicitly requested an Emergency Alarm to the control room!",
                         duration: 8000,
                     });
                 }
@@ -85,7 +89,7 @@ const PoliceInterface = () => {
         } catch (e) {
             console.error("BroadcastChannel error", e);
         }
-    }, []);
+    }, [playWarningAlert]);
 
     return (
         <div className="min-h-screen bg-background flex flex-col">

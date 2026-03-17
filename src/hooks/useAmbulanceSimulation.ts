@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { AmbulanceState, Coordinates, TrafficSignal, Alert, RoutePoint } from '@/types/ambulance';
+import { useLocationTracking } from './useLocationTracking';
 
 // Predefined route through a city simulation
 const ROUTE_POINTS: RoutePoint[] = [
@@ -137,6 +138,12 @@ export function useAmbulanceSimulation(audioCallbacks?: AudioCallbacks, notifica
   const [policeStations, setPoliceStations] = useState<PoliceStation[]>(() => generatePoliceStations(activeRoutePoints));
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isDispatched, setIsDispatched] = useState(false);
+  
+  // Supabase Tracking
+  const { startTrip, logLocation, endTrip } = useLocationTracking();
+  const tripMetadataRef = useRef<{ tripId: string, sessionId: string } | null>(null);
+  const lastLogTimeRef = useRef<number>(0);
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioCallbacksRef = useRef(audioCallbacks);
   const notificationCallbacksRef = useRef(notificationCallbacks);
@@ -257,7 +264,7 @@ export function useAmbulanceSimulation(audioCallbacks?: AudioCallbacks, notifica
     });
   }, [addAlert, isAutoGreenEnabled, activeRoutePoints]);
 
-  const startDispatch = useCallback(() => {
+  const startDispatch = useCallback(async () => {
     if (isDispatched) return;
 
     setIsDispatched(true);
@@ -274,10 +281,23 @@ export function useAmbulanceSimulation(audioCallbacks?: AudioCallbacks, notifica
     addAlert('info', '📡 Broadcasting clearance request to all traffic signals');
     audioCallbacksRef.current?.onDispatch?.();
     notificationCallbacksRef.current?.onDispatch?.();
-  }, [isDispatched, addAlert, activeRoutePoints]);
+
+    // Start Supabase Trip
+    const meta = await startTrip(activeRoutePoints[0], activeRoutePoints[activeRoutePoints.length - 1]);
+    if (meta) {
+      tripMetadataRef.current = meta;
+    }
+  }, [isDispatched, addAlert, activeRoutePoints, startTrip]);
 
   const stopDispatch = useCallback(() => {
     setIsDispatched(false);
+
+    // End Supabase Trip
+    if (tripMetadataRef.current) {
+      endTrip(tripMetadataRef.current.tripId);
+      tripMetadataRef.current = null;
+    }
+
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -411,6 +431,18 @@ export function useAmbulanceSimulation(audioCallbacks?: AudioCallbacks, notifica
         // Throttle to avoid over-spamming (e.g., every ~1 second of simulation time)
         if (Math.random() < 0.05) { // Roughly every 20 ticks = 1 second
           updateAmbulanceOnBackend(newPosition, 60, 'moving');
+        }
+
+        // Log to Supabase every 5 seconds
+        const now = Date.now();
+        if (now - lastLogTimeRef.current > 5000 && tripMetadataRef.current) {
+          logLocation(
+            tripMetadataRef.current.tripId,
+            tripMetadataRef.current.sessionId,
+            newPosition,
+            60
+          );
+          lastLogTimeRef.current = now;
         }
 
         return newProgress;

@@ -11,6 +11,7 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,35 +28,96 @@ const Login = () => {
 
     setIsLoading(true);
 
+    if (isDemoMode) {
+      setTimeout(() => {
+        setIsLoading(false);
+        if (trimmedUser === '123' || trimmedUser === '22it66') {
+          toast.success("Demo Login Successful", { description: "Running in offline mode." });
+          if (selectedRole === 'admin') {
+            localStorage.setItem('isAdmin', 'true');
+            navigate('/admin');
+          } else {
+            navigate(selectedRole === 'user' ? '/user' : '/police');
+          }
+        } else {
+          toast.error("Demo Mode Error", { description: "Use ID '123' or '22it66' for demo." });
+        }
+      }, 1000);
+      return;
+    }
+
     try {
-      // Determine which table to query based on role
-      const tableName = selectedRole === 'admin' ? 'admins' : 
-                      selectedRole === 'user' ? 'users' : 'police';
-
-      const { data, error } = await (supabase as any)
-        .from(tableName)
-        .select('*')
-        .eq('username', trimmedUser)
-        .eq('password', trimmedPass)
-        .single();
-
-      setIsLoading(false);
-
-      if (error || !data) {
-        toast.error("Access Denied", {
-          description: "Invalid credentials. Please check your ID and Password."
-        });
-        return;
-      }
-
-      // Success
       if (selectedRole === 'admin') {
+        let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: trimmedUser.includes('@') ? trimmedUser : `${trimmedUser}@ambulance.local`,
+          password: trimmedPass
+        });
+
+        if (authError) {
+          console.log("Supabase Auth failed, trying table fallback for Admin...", authError.message);
+          // Fallback to table lookup for Admin if Auth fails (allows mock credits to work)
+          const { data, error: tableError } = await (supabase as any)
+            .from('admins')
+            .select('*')
+            .eq('username', trimmedUser)
+            .eq('password', trimmedPass)
+            .single();
+
+          if (tableError || !data) {
+            setIsLoading(false);
+            console.error("Admin Fallback Error:", tableError);
+            toast.error("Admin Access Denied", {
+              description: "Invalid credentials. Ensure the 'admins' table exists or the Auth user is created."
+            });
+            return;
+          }
+          // Success via table
+        }
+
+        setIsLoading(false);
         localStorage.setItem('isAdmin', 'true');
         toast.success("Admin Access Granted", {
           description: "Welcome to the management console."
         });
         navigate('/admin');
       } else {
+        // Table-based lookup for User/Police
+        const tableName = selectedRole === 'user' ? 'users' : 'police';
+
+        const { data, error } = await (supabase as any)
+          .from(tableName)
+          .select('*')
+          .eq('username', trimmedUser)
+          .eq('password', trimmedPass)
+          .single();
+
+        setIsLoading(false);
+
+        if (error) {
+          console.error("Database Lookup Error:", error);
+          if (error.code === 'PGRST116') {
+            toast.error("Access Denied", {
+              description: `No matching record in '${tableName}' table for ID: ${trimmedUser}`
+            });
+          } else if (error.message?.includes('relation') || error.message?.includes('does not exist')) {
+            toast.error("Database Error", {
+              description: `The '${tableName}' table was not found. Please run the SQL schema in Supabase.`
+            });
+          } else {
+            toast.error("Authentication Error", {
+              description: error.message
+            });
+          }
+          return;
+        }
+
+        if (!data) {
+          toast.error("Access Denied", {
+            description: "No data found for these credentials."
+          });
+          return;
+        }
+
         toast.success("Login Successful", {
           description: `Authenticated as ${selectedRole === 'user' ? 'Citizen' : 'Traffic Official'}.`
         });
@@ -217,6 +279,19 @@ const Login = () => {
                       {isLoading ? "Authenticating..." : "Authorize & Enter"}
                       {!isLoading && <ArrowRight className="w-5 h-5" />}
                     </button>
+
+                    <div className="flex items-center justify-center gap-3 mt-6 py-3 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      <input 
+                        type="checkbox" 
+                        id="demo-mode" 
+                        checked={isDemoMode}
+                        onChange={(e) => setIsDemoMode(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary h-5 w-5"
+                      />
+                      <label htmlFor="demo-mode" className="text-xs font-bold text-slate-500 cursor-pointer select-none">
+                        ENABLE DEMO MODE (BYPASS SUPABASE)
+                      </label>
+                    </div>
                   </form>
                 </div>
               </div>

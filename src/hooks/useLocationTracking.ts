@@ -6,9 +6,23 @@ export const useLocationTracking = () => {
   const [currentTripId, setCurrentTripId] = useState<string | null>(null);
 
   const startTrip = useCallback(async (source: Coordinates, destination: Coordinates) => {
+    const sessionId = `trip-${Date.now()}`;
+    const demoTrip = {
+      id: `demo-${Date.now()}`,
+      session_id: sessionId,
+      source_lat: source.lat,
+      source_lng: source.lng,
+      destination_lat: destination.lat,
+      destination_lng: destination.lng,
+      status: 'active',
+      started_at: new Date().toISOString()
+    };
+
+    // Save to LocalStorage as fallback
+    const localTrips = JSON.parse(localStorage.getItem('demo_trips') || '[]');
+    localStorage.setItem('demo_trips', JSON.stringify([demoTrip, ...localTrips].slice(0, 50)));
+
     try {
-      const sessionId = `trip-${Date.now()}`;
-      // Cast supabase to any to bypass local type errors for tables that need to be created in Supabase SQL editor
       const { data, error } = await (supabase as any)
         .from('ambulance_trips')
         .insert({
@@ -22,31 +36,38 @@ export const useLocationTracking = () => {
         .select()
         .single();
 
-      if (error) throw error;
-      
-      setCurrentTripId(data.id);
-      return { tripId: data.id, sessionId };
+      if (!error && data) {
+        setCurrentTripId(data.id);
+        return { tripId: data.id, sessionId };
+      }
     } catch (error) {
-      console.error('Error starting Supabase trip:', error);
-      return null;
+      console.warn('Supabase offline, using local tracking only');
     }
+    
+    setCurrentTripId(demoTrip.id);
+    return { tripId: demoTrip.id, sessionId };
   }, []);
 
   const logLocation = useCallback(async (tripId: string, sessionId: string, coords: Coordinates, speed: number) => {
-    try {
-      const { error } = await (supabase as any)
-        .from('ambulance_locations')
-        .insert({
-          trip_id: tripId,
-          session_id: sessionId,
-          latitude: coords.lat,
-          longitude: coords.lng,
-          speed: speed
-        });
+    const ping = {
+      trip_id: tripId,
+      session_id: sessionId,
+      latitude: coords.lat,
+      longitude: coords.lng,
+      speed: speed,
+      recorded_at: new Date().toISOString()
+    };
 
-      if (error) throw error;
+    // Always save to LocalStorage as fallback
+    const localPings = JSON.parse(localStorage.getItem(`pings_${tripId}`) || '[]');
+    localStorage.setItem(`pings_${tripId}`, JSON.stringify([...localPings, ping]));
+
+    try {
+      await (supabase as any)
+        .from('ambulance_locations')
+        .insert(ping);
     } catch (error) {
-      console.error('Error logging location to Supabase:', error);
+      // Silent fail for Supabase
     }
   }, []);
 

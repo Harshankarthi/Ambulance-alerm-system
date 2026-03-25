@@ -39,7 +39,9 @@ const AdminDashboard = () => {
   }, []);
 
   const checkAuth = async () => {
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
+    const { data: { session } } = await supabase.auth.getSession();
+    const isAdmin = localStorage.getItem('isAdmin') === 'true' || !!session;
+    
     if (!isAdmin) {
       navigate('/');
       toast.error("Unauthorized", { description: "Admin access only." });
@@ -54,18 +56,27 @@ const AdminDashboard = () => {
       .select('*')
       .order('started_at', { ascending: false });
 
+    // Fallback to LocalStorage
+    const localTrips = JSON.parse(localStorage.getItem('demo_trips') || '[]');
+    
     if (error) {
-      console.error("Supabase Error (fetchTrips):", error);
-      toast.error("Error fetching trips", { description: error.message });
+      console.warn("Supabase Error (fetchTrips):", error);
+      setTrips(localTrips);
     } else {
-      console.log("Trips fetched successfully:", data?.length || 0);
-      setTrips(data || []);
+      // Merge unique trips
+      const supabaseIds = new Set((data || []).map((t: any) => t.id));
+      const combined = [...(data || []), ...localTrips.filter((t: any) => !supabaseIds.has(t.id))];
+      setTrips(combined.sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()));
     }
     setIsLoading(false);
   };
 
   const fetchTripDetails = async (trip: Trip) => {
     setSelectedTrip(trip);
+    
+    // Check LocalStorage first (for zero-latency or offline)
+    const localPings = JSON.parse(localStorage.getItem(`pings_${trip.id}`) || '[]');
+    
     const { data, error } = await (supabase as any)
       .from('ambulance_locations')
       .select('latitude, longitude, recorded_at, speed')
@@ -73,9 +84,13 @@ const AdminDashboard = () => {
       .order('recorded_at', { ascending: true });
 
     if (error) {
-      toast.error("Error fetching locations", { description: error.message });
+      console.warn("Supabase Fetch Error (Locations):", error);
+      setLocations(localPings);
     } else {
-      setLocations(data || []);
+      // Merge unique pings
+      const supabaseTimes = new Set((data || []).map((l: any) => l.recorded_at));
+      const combined = [...(data || []), ...localPings.filter((l: any) => !supabaseTimes.has(l.recorded_at))];
+      setLocations(combined.sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()));
     }
   };
 
@@ -138,12 +153,27 @@ const AdminDashboard = () => {
                 <p className="text-slate-400 italic text-sm">No travel data found.</p>
                 <p className="text-[10px] text-slate-300 mt-1 uppercase font-bold">Check Supabase RLS or start a dispatch</p>
               </div>
-              <button 
-                onClick={fetchTrips}
-                className="text-xs font-bold text-indigo-500 hover:text-indigo-600 underline underline-offset-4"
-              >
-                Refresh Data
-              </button>
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={fetchTrips}
+                  className="text-xs font-bold text-indigo-500 hover:text-indigo-600 underline underline-offset-4"
+                >
+                  Refresh Data
+                </button>
+                <button 
+                  onClick={async () => {
+                    const { startTrip, logLocation } = (await import('../hooks/useLocationTracking')).useLocationTracking();
+                    const meta = await startTrip({ lat: 12.9716, lng: 77.5946 }, { lat: 12.9820, lng: 77.6110 });
+                    if (meta) {
+                       toast.success("Sample Trip Created", { description: "Refresh to see the demo data." });
+                       setTimeout(() => fetchTrips(), 500);
+                    }
+                  }}
+                  className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold mt-4 border border-indigo-100"
+                >
+                  GENERATE SAMPLE DATA
+                </button>
+              </div>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
@@ -234,6 +264,16 @@ const AdminDashboard = () => {
                   <Marker position={[selectedTrip.source_lat, selectedTrip.source_lng]} icon={L.divIcon({ html: '📍', className: '', iconSize: [30,30] })} />
                   <Marker position={[selectedTrip.destination_lat, selectedTrip.destination_lng]} icon={L.divIcon({ html: '🏥', className: '', iconSize: [30,30] })} />
 
+                  {/* Planned Path Dotted Line */}
+                  <Polyline 
+                    positions={[
+                      [selectedTrip.source_lat, selectedTrip.source_lng],
+                      [selectedTrip.destination_lat, selectedTrip.destination_lng]
+                    ]} 
+                    pathOptions={{ color: '#94a3b8', weight: 2, dashArray: '10, 10', opacity: 0.5 }} 
+                  />
+
+                  {/* Actual Logged Path */}
                   {locations.length > 1 && (
                     <Polyline 
                       positions={locations.map(l => [l.latitude, l.longitude])} 
